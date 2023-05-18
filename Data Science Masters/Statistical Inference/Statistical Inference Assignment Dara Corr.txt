@@ -1,0 +1,538 @@
+#Question 1 Estimation Bias and Efficiency
+#i) Using the function rpois, create a function that generates a random sample of
+#Poisson Data and calculates the mean of this sample. inputs are vals of lambda and n (sample size)
+
+set.seed(22275193)
+
+meanpois <- function(lam,n){
+  x<- rpois(lambda=lam,n=n)
+  output <- mean(x)
+  output
+}
+
+#(ii) generate one sample mean using lambda = 1 and n = 10
+lam = 1
+
+set.seed(22275193)
+meanpois(lam,n=10)
+
+#(iii) run (ii) 1000 times and find mean and variance of the resulting sample means
+#lambda vec is our estimator, contains 1000 sample means
+
+set.seed(22275193)
+lambda_vec <- replicate(1000,meanpois(1,10))
+mean(lambda_vec)
+var(lambda_vec)
+
+#MSE = E((theta_hat-theta)^2)
+#MSE = Var(theta_hat) + (E(theta_hat)- theta)
+#= var(lambda_vec) + (mean(lambda_vec) - lambda)^2 
+MSE <- var(lambda_vec) + (mean(lambda_vec) - lam)^2
+MSE
+
+ #(iv)#repeat last step for n=10,20,50,200,400,1000
+
+
+lam = 1
+MSEvec <- c()
+Biasvec <- c()
+meansvec <- c()
+varsvec <- c()
+efficiencyvec <- c()
+n_nums <- c(10,20,50,200,400,1000)
+
+set.seed(22275193)
+for (i in 1:length(n_nums)) {
+  n = n_nums[i]
+  lambda_vec <- replicate(1000,meanpois(lam,n))
+  meansvec[i] <- mean(lambda_vec)
+  varsvec[i] <- var(lambda_vec)
+  MSE <- var(lambda_vec) + (mean(lambda_vec) - lam)^2
+  MSEvec[i] <- MSE
+  Bias <- (mean(lambda_vec) - lam)^2
+  Biasvec[i] <- Bias
+  efficiencyvec[i] <- (lam/n) * 1/(varsvec[i])
+  }
+meansvec
+Biasvec
+
+plot(n_nums,Biasvec) #bias vs sample size
+plot(n_nums,MSEvec) #MSE vs sample size
+plot(n_nums,efficiencyvec) #efficiency vs sample size n
+
+
+#(v)
+
+lam = 0.5
+MSEvec <- c()
+Biasvec <- c()
+meansvec <- c()
+varsvec <- c()
+efficiencyvec <- c()
+n_nums <- c(10,20,50,200,400,1000)
+
+set.seed(22275193)
+for (i in 1:length(n_nums)) {
+  n = n_nums[i]
+  lambda_vec <- replicate(1000,meanpois(lam,n))
+  meansvec[i] <- mean(lambda_vec)
+  varsvec[i] <- var(lambda_vec)
+  MSE <- var(lambda_vec) + (mean(lambda_vec) - lam)^2
+  MSEvec[i] <- MSE
+  Bias <- (mean(lambda_vec) - lam)^2
+  Biasvec[i] <- Bias
+  efficiencyvec[i] <- (lam/n) * 1/(varsvec[i])
+}
+meansvec
+Biasvec
+
+plot(n_nums,Biasvec) #bias vs sample size
+plot(n_nums,MSEvec) #MSE vs sample size
+plot(n_nums,efficiencyvec) #efficiency vs sample size n
+
+lam = 4
+MSEvec <- c()
+Biasvec <- c()
+meansvec <- c()
+varsvec <- c()
+efficiencyvec <- c()
+n_nums <- c(10,20,50,200,400,1000)
+
+set.seed(22275193)
+for (i in 1:length(n_nums)) {
+  n = n_nums[i]
+  lambda_vec <- replicate(1000,meanpois(lam,n))
+  meansvec[i] <- mean(lambda_vec)
+  varsvec[i] <- var(lambda_vec)
+  MSE <- var(lambda_vec) + (mean(lambda_vec) - lam)^2
+  MSEvec[i] <- MSE
+  Bias <- (mean(lambda_vec) - lam)^2
+  Biasvec[i] <- Bias
+  efficiencyvec[i] <- (lam/n) * 1/(varsvec[i])
+}
+meansvec
+Biasvec
+
+plot(n_nums,Biasvec) #bias vs sample size
+plot(n_nums,MSEvec) #MSE vs sample size
+plot(n_nums,efficiencyvec) #efficiency vs sample size n
+
+
+#######################################################
+##Question 2
+#i)
+#Normal distribution with mu = 1 and sigma = 1
+
+
+#use rnorm() function
+meannorm <- function(n,mu,sigma){
+  x<- rnorm(n=n,mean = mu, sd = sigma)
+  output <- mean(x)
+  output
+}
+set.seed(22275193)
+meannorm(5,1,1)
+
+set.seed(22275193)
+meannorm_vec <- replicate(1000,meannorm(n=5,1,1)) #change n =5, 20 and 50
+mean(meannorm_vec)
+var(meannorm_vec)
+
+hist(meannorm_vec,breaks = 30) #showing sample of Normal data is normally distributed
+qqnorm(meannorm_vec)#using hist and qqplots
+qqline(meannorm_vec)
+
+#apply above to :
+##Exponentially distributed data with lambda = 1
+##Bernouilli data with p = 0.5
+##Bernoiilli data with p = 0.05
+
+#rexp(# n observations, rate)
+meanexp <- function(n_obvs,lambda){
+  x <- rexp(n=n_obvs,rate = lambda)
+  output <- mean(x)
+  output
+}
+
+set.seed(22275193)
+meanexp_vec <- replicate(1000,meanexp(n=50,lambda = 1)) #change n =5, 20 and 50
+
+hist(meanexp_vec, breaks = 30)#using hist and qqplots to show sample mean of exp is normally distributed
+qqnorm(meanexp_vec)
+qqline(meanexp_vec)
+
+##repeat for Bernouilli dist
+#p =0.5 and p = 0.05
+
+meanbernouilli <- function(n_obvs,p){
+  x <- rbinom(n=n_obvs,size = 1, prob = p)
+  output <- mean(x)
+  output
+}
+
+#n= 5, 20, 50
+set.seed(22275193)
+meanbern_vec <- replicate(1000,meanbernouilli(n = 20, p =0.05))
+mean(meanbern_vec)
+var(meanbern_vec)
+
+meanbern_vec
+
+hist(meanbern_vec, breaks = 20)#omitted breaks for n = 5, p =0.5 & for p = 0.05
+qqnorm(meanbern_vec)
+qqline(meanbern_vec)
+
+
+#################################################################
+#Q3
+#Generate one sample of Gamma data 
+#of size n = 100, lambda = 1 and alpha = 3
+alpha = 3
+lambda = 1
+n = 100
+set.seed(22275193)
+gammasample <- rgamma(n,shape =alpha ,rate = lambda)
+x <- gammasample #call the sample data x for simplicity and readability
+
+#ii) find MLE for gamma parameter lambda by hand
+#lambda_hat = (n*alpha)/sum(x_i)
+lambda_hat <- (n*alpha)/sum(x)
+lambda_hat
+
+#iii) plug lambda_hat into likelihood function and estimate alpha_hat to 
+#one decimal place using plot() function
+
+gammalikelihood <- function(alpha){
+  #function computes log likelihood for our gamma sample data
+  loglike <- n*alpha*log(lambda_hat) + (alpha - 1)*sum(log(x)) - lambda_hat*sum(x) - n*log(gamma(alpha))
+  loglike
+  }
+alpha_vals = seq(from = 0.1, to = 10, by = 0.0005) #create finer mesh to pinpoint alpha
+
+likelihoodplot <- gammalikelihood(alpha_vals)
+
+max(likelihoodplot)
+I <- match(max(likelihoodplot),likelihoodplot)
+
+alpha_vals[I]
+
+plot(alpha_vals,likelihoodplot)
+library(zoom)
+zm()
+#alpha_hat = 2.8505 from plot
+#asked to give alpha_hat to 1dp ->
+
+alpha_hat <- 2.9
+
+
+#what is the associated lambda_hat value for this alpha_hat value:
+
+#lambda_hat_eval = n*alpha/sum(x_i)
+
+lambda_hat_2 <- (n*alpha_hat)/sum(x) #same as 2.85/X_bar =  2.85/mean(x)
+lambda_hat_2
+#lambda_hat = 0.9476307 for alpha_hat = 2.9
+
+#iv)
+#rewrite last likelihood function with theta_hat <- c(alpha,lambda)
+
+#likelihood function in alpha and lambda that we will use in nlm function to get 
+#max likelihood:
+
+
+gammalikelihood2 <- function(theta_hat,x){
+  #function computes log likelihood for our gamma sample data
+  alpha <- theta_hat[1]
+  lambda <- sqrt((theta_hat[2])^2) #define lambda > 0
+  n <- length(x)
+  loglike <- n*alpha*log(lambda) + (alpha - 1)*sum(log(x)) - lambda*sum(x) - n*log(gamma(alpha))
+  return(-loglike)#minus log likelihood output
+}
+
+#calculating mle of gamma fn using nlm() function with data x and kicking off the 
+#newton method procedure at lambda_hat=1 and alpha_hat = 3
+mle <- nlm(gammalikelihood2,p = c(3,1), x=x)
+
+mle
+
+# alpha = 2.265237, lambda = 0.740209
+
+
+
+#(v)
+
+mle2 <- nlm(gammalikelihood2,p = c(3,1), x=x,hessian = TRUE)
+
+mle2
+
+#Hessian := [d2(obj)/d(theta1)2,  d2(obj)/d(theta1)d(theta2)];
+          ##[d2(obj)/d(theta2)d(theta1),  d2(obj)/d(theta2)2];
+
+#note since we minimized -loglikelihood (l(theta)):
+#d2(obj)/d(theta)2 = -d2(l(theta))/d(theta)2 which is the observed information
+
+#Var(theta_hat_i) >= [I^{-1}]_{ii}
+
+obsv_info <- mle2$hessian
+obsv_info
+
+library(matlib)
+
+var_alpha_hat <- Inverse(obsv_info)[1]
+var_lambda_hat <- Inverse(obsv_info)[4]
+
+alpha_hat_ci <- c(mle2$estimate[1] -1.96*var_alpha_hat , mle2$estimate[1] +1.96*var_alpha_hat )
+alpha_hat_ci #95% CI for lambda_hat, alpha = 0.05
+
+lambda_hat_ci <- c(mle2$estimate[2] -1.96*var_lambda_hat , mle2$estimate[2] +1.96*var_lambda_hat )
+lambda_hat_ci #95% CI for lambda_hat, alpha = 0.05
+
+alpha_hat_ci <- c(mle2$estimate[1] -2.576*var_alpha_hat , mle2$estimate[1] +2.576*var_alpha_hat )
+alpha_hat_ci #99% CI for alpha_hat, alpha = 0.01
+
+lambda_hat_ci <- c(mle2$estimate[2] -2.576*var_lambda_hat , mle2$estimate[2] +2.576*var_lambda_hat )
+lambda_hat_ci #99% CI for lambda_hat, alpha = 0.01
+
+###################################################################
+#q4
+#i)
+
+#produce function which generates data from a normal distribution and calculates
+#a 95% CI for mu via X_bar +- z_alpha/2 S/sqrt(n)
+
+#This CI is used when n is large (from lecture notes)
+
+#alpha = 0.05, alpha/2 = 0.0025             
+
+normCI_z <- function(n,mu,sigma){
+  x<- rnorm(n=n,mean = mu, sd = sigma)
+  xbar <- mean(x)
+  s_squared <- var(x)
+  output <- c(xbar - 1.96*sqrt(s_squared/n), xbar + 1.96*sqrt(s_squared/n))
+}
+
+#this is approx CI that improves as n tends to +infinity
+
+
+#q4(ii)
+#same as function above except we use t values instead (alpha/2 = 0.0025, nu (dof) ?t=n-1)
+
+#This CI is used when data is normally distributed (which is the case here)
+
+normCI_t<- function(n,mu,sigma){
+  x<- rnorm(n=n,mean = mu, sd = sigma)
+  xbar <- mean(x)
+  s_squared <- var(x)
+  t <- qt(p = 0.025, df = n-1) #gives negative t-vals
+  output <- c(xbar + t*sqrt(s_squared/n), xbar - t*sqrt(s_squared/n))
+}
+
+#this CI works for small sample sizes but data must be normally distributed
+
+#(iii) expect the function in (ii) to perform better for smaller samples, since it 
+#uses t distribution. i) uses z scores from normal distribution, which give 
+#better results for n>30, from CLT
+
+
+#(iv)
+n=10
+TRUEmu1count = 0
+TRUEmu2count = 0
+
+set.seed(22275193)
+for (i in 1:1000){
+
+  CI1 <- normCI_z(n,1,1)
+  if ((CI1[1] < 1) & (CI1[2] > 1)){
+   TRUEmu1count = TRUEmu1count +1 
+  }
+  
+  CI2 <- normCI_t(n,1,1)
+  if ((CI2[1] < 1) & (CI2[2] > 1)){
+    TRUEmu2count = TRUEmu2count +1 
+  }
+  
+}
+
+TRUEmu1count/10
+TRUEmu2count/10
+
+#(v)
+
+n=500
+TRUEmu1count = 0
+TRUEmu2count = 0
+
+set.seed(22275193)
+for (i in 1:1000){
+  
+  CI1 <- normCI_z(n,1,1)
+  if ((CI1[1] < 1) & (CI1[2] > 1)){
+    TRUEmu1count = TRUEmu1count +1 
+  }
+  
+  CI2 <- normCI_t(n,1,1)
+  if ((CI2[1] < 1) & (CI2[2] > 1)){
+    TRUEmu2count = TRUEmu2count +1 
+  }
+  
+}
+
+TRUEmu1count/10
+TRUEmu2count/10
+
+
+#######################################################
+#q5
+
+#Bootstrapping is a resampling procedure that is used to estimate statistics on a 
+#population by sampling a dataset and replacement.
+
+#Process for building a sample:
+#1) Choose size of sample
+#2) While the size of the sample is less than the chosen size:
+#-> randomly select an observation from the dataset (can be chosen more than once)
+#-> add it to the sample
+
+
+#(i)explain what boostrapping is
+##^
+
+
+#(ii)Generate a sample of exponential data with n = 100 and lambda = 1.
+#Bootstrap this data 1000 times, calculating the median for the sample in each
+#bootstrapped sample.
+#The 0.025 and 0.975 quantiles of
+#the distribution of bootstrapped medians provides a confidence interval
+#for the median.
+
+n = 100
+lam = 1
+
+set.seed(22275193)
+expsample <- rexp(n=n, rate = lam)
+expsample
+
+#the statistic we are interested in, is the median:
+
+##Getting 1000 Bootstrapped samples and finding the median of each bootstrapped 
+#sample and storing the medians in a vector (result_vec)
+
+B = 1000
+result_vec <- vector(length = B)
+
+set.seed(22275193)
+for (b in 1:B){
+  
+  boot_sample <- sample(expsample, size = length(expsample), replace = TRUE)
+  
+  med <- median(boot_sample)
+  
+  result_vec[b] <- med
+}
+
+hist(result_vec, breaks = 30)
+median(expsample)
+
+#getting 95% Confidence Interval
+lower_bound <- quantile(result_vec, probs = 0.025)
+upper_bound <- quantile(result_vec, probs = 0.975)
+boot_CI <- c(lower_bound,upper_bound)
+boot_CI
+
+
+#(iii)
+#perform this process 1000 times to evaulate the performance of the confidence
+#interval in a similar manner to Q4(ii)
+
+
+n = 100 #change to n = 10 and n = 50 for part (v)
+lam = 1
+B = 1000
+
+set.seed(22275193)
+expsample <- rexp(n=n, rate = lam)
+expsample
+
+#Need to calculate True median of original sample:
+TRUEmed <- log(2)/lam
+TRUEmed
+
+CI_count <- 0
+
+set.seed(22275193)
+for (i in 1:1000){
+  
+  
+  ##Getting 1000 Bootstrapped samples and finding the median of each bootstrapped 
+  #sample and storing the medians in a vector (result_vec)
+  result_vec <- vector(length = B)
+  
+    for (b in 1:B){
+    
+      boot_sample <- sample(expsample, size = length(expsample), replace = TRUE)
+    
+      med <- median(boot_sample)
+    
+      result_vec[b] <- med
+    }
+  
+  
+  #getting 95% Confidence Interval
+  lower_bound <- quantile(result_vec, probs = 0.025)
+  upper_bound <- quantile(result_vec, probs = 0.975)
+  boot_CI <- c(lower_bound,upper_bound)
+  
+  
+  if ((boot_CI[1] < TRUEmed) & (boot_CI[2] > TRUEmed)){
+    CI_count = CI_count + 1
+  }
+}
+CI_count
+#result for n = 100 = 981 i.e. 98.1%
+
+#evaulate for WALD CI and compare
+
+
+
+
+
+#part (iv)
+#
+
+n = 100 #change to n = 10, n = 50 and n = 100 for part (v)
+lam = 1
+
+set.seed(22275193)
+expsample <- rexp(n=n, rate = lam)
+x <- expsample
+lambda_hat <- n/(sum(x)) 
+ci_lambda_hat <- c(lambda_hat-1.96*sqrt(1/(sum(x))),lambda_hat+1.96*sqrt(1/(sum(x))) )
+ci_lambda_hat
+
+lambda_hat
+
+#For EXP dist, true median = log(2)/lambda <- use lambda hat here to get 
+#CI for median
+CI_median_WALD <- c((log(2))/ci_lambda_hat[2], (log(2))/ci_lambda_hat[1])
+CI_median_WALD
+
+
+#evaluate performance of this CI:
+
+result_count <- 0
+set.seed(22275193)
+for (i in 1:1000){
+  
+  x <- rexp(n=n, rate = lam)
+  lambda_hat <- n/(sum(x)) 
+  ci_lambda_hat <- c(lambda_hat-1.96*sqrt(1/(sum(x))),lambda_hat+1.96*sqrt(1/(sum(x))) )
+  CI_WALD <- c((log(2))/ci_lambda_hat[2], (log(2))/ci_lambda_hat[1])
+  if ((CI_WALD[1] < TRUEmed) & (CI_WALD[2] > TRUEmed)){
+    result_count = result_count +1 
+  }
+}
+
+result_count
+
+result_count/10

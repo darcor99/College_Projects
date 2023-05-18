@@ -1,0 +1,430 @@
+---
+title: "MA4128 Assignment"
+author: 'Dara Corr,    ID: 22275193 '
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = TRUE)
+# Include relevant packages here. You may add any extra ones you need.
+require(tidyverse)
+require(GGally)
+require(corrplot)
+require(kableExtra)
+require(MASS)
+require(tree)
+
+
+
+
+```
+
+## Question (a) - Technical report
+
+```{r echo=TRUE}
+# Load in the data set. 
+heartdata <- read_csv("HeartDiseaseData.csv")
+
+#coding categorical data
+heartdata$HeartDisease <- factor(heartdata$HeartDisease) 
+heartdata$Sex <- factor(heartdata$Sex)
+heartdata$Smoking <- factor(heartdata$Smoking)
+heartdata$AlcoholDrinking <- factor(heartdata$AlcoholDrinking)
+heartdata$Stroke <- factor(heartdata$Stroke)
+heartdata$AgeCategory <- factor(heartdata$AgeCategory)
+
+```
+
+The objective of this assignment is to determine what factors influence whether a person has heart disease or not. To determine these factors, a dataset from the Centre for Disease Control was analysed. The contents in this dataset are from survey responses from 5420 American citizens reporting their health condition and background.
+
+The participants were asked a number of questions relating to their current health and their behaviours, such as whether they have heart disease, what their BMI is and have they smoked a lot throughout their life.
+
+Exploratory analysis showed that of the 5420 individuals in this dataset, 72.27% of those sampled said they have heart disease. This statistic seems much higher that what would be expected from a simple random sample of the population but since identifying key factors that influence heart disease is the concern, it is unlikely to be an issue in this analysis. There is a good balance of males and females surveyed in all of the age cohorts in this dataset in general.
+
+```{r echo=TRUE}
+cs <- colSums(heartdata == "Yes") #3917 Yes
+cs[cs > 0]
+
+
+cs <- colSums(heartdata == "No") #1503 No
+cs[cs > 0]
+
+tot = 3917+1503 
+pc_h_disease = 3917/tot 
+round(pc_h_disease * 100,2) #percent of sample with heart disease == 72.27%
+```
+
+```{r echo=TRUE}
+Females <- heartdata[heartdata$Sex=="Female", , drop = FALSE]
+Males <- heartdata[heartdata$Sex=="Male", , drop = FALSE]
+
+dim(Males) #2983 rows
+dim(Females) #2437 rows
+```
+
+```{r echo = TRUE}
+agg_tbl1 <- heartdata %>% group_by(AgeCategory) %>% 
+  summarise(Male = sum(Sex == 'Male'),
+            Female = sum(Sex == 'Female'),
+            total = sum((HeartDisease == 'Yes') | (HeartDisease == 'No')),
+            .groups = 'drop')
+agg_tbl1
+```
+
+One key observation found from the exploratory analysis is that as age increased, the proportion of those with heart disease in each age cohort increased quite significantly.
+
+```{r}
+
+agg_tbl2 <- heartdata %>% group_by(AgeCategory) %>% 
+  summarise(have_disease = sum(HeartDisease == 'Yes'),
+            total = sum((HeartDisease == 'Yes') | (HeartDisease == 'No')),
+            .groups = 'drop')
+agg_tbl2
+```
+
+Further analysis will be useful to determine which age groups are most at risk to heart disease.
+
+I used logistic regression to determine what variables contribute most to people developing heart disease. Logistic regression is a suitable model to use here since there are only 2 possible outcomes to having heart disease, "Yes" and "No".
+
+```{r}
+reg <- glm(HeartDisease ~ BMI + Smoking + AlcoholDrinking + Stroke + PhysicalHealth + MentalHealth + Sex + AgeCategory + SleepTime, data = heartdata, family = binomial)
+
+summary(reg)
+```
+
+From the summary table above it appears that all of the variables are of significance here.
+
+It appears that those aged 35 years or older may be more at risk to heart disease than those aged under 35 since all the age groups from 35 and over are significant in this model. Those who have previously had a stroke are also flagged at being very likely to have heart disease from the summary output of this logistic regression.
+
+```{r echo = TRUE}
+round(exp(reg$coefficients),2)
+```
+
+The odds ratios above from the logistic regression coefficient outputs provide insight into what conditions and behaviours are more likely to cause heart disease.
+
+Someone who is in the age category of 65-69 years is over 19 times more likely to have heart disease than someone who is not in that age group. We see the age ratios for the age groups increase for the older age groups, which indicates that older people are at a much greater risk of heart disease.
+
+Someone who has previously had a stroke is also very likely to have heart disease, from the output above they are deemed 4.45 - almost four and a half - times more likely to have heart disease.
+
+From a healthcare perspective, it is important to investigate what behaviours or habits are likely to cause heart disease in the population. The logistic regression model with all variables included - reg - is valuable in assessing what members of the population should have particular attention paid to regards cardiac health issues and heart disease screening. Since aging is impossible to prevent and strokes are likely to be a symptom of heart disease rather than a cause, another logistic regression model with Stroke and AgeCategory variables removed may provide valuable insight into the causes of heart disease, so that they can be identified.
+
+```{r echo = TRUE}
+reg2 <- glm(HeartDisease ~ BMI + Smoking + AlcoholDrinking + PhysicalHealth + MentalHealth + Sex + SleepTime, data = heartdata, family = binomial)
+
+summary(reg2)
+```
+
+From the Summary of the regression model with AgeCategory and Stroke variables omitted - reg2 - it appears that heavy drinking and poor mental health do not increase someone's likelihood of having heart disease. This is because these variables have negative log-likelihoods associated with them, meaning that the likelihood of an individual having heart disease decreases if they are a heavy drinker or they have had several poor experiences with poor mental health in the period they were surveyed.
+
+```{r echo = TRUE}
+coefs <- round(exp(reg2$coefficients),2)
+coefs
+
+CI <- round(exp(confint(reg2)),2)
+
+CI_list <- cbind(coefs, CI)
+CI_list
+```
+
+The odds ratios above and their associated 95% confidence intervals give a good idea of what the main causes of heart disease are from those surveyed. Smoking is the largest value here, with a value of 1.98, meaning that someone who smokes is 98% more likely to develop heart disease than someone who does not smoke, making a significant contributor to heart diseases for American adults. Males are also deemed 53% more likely to develop heart disease than women from this model.
+
+Physical health is also an important contributor to heart disease. A BMI increase of 1 for an individual means that they are 3% more likely to develop heart disease. The variable PhysicalHealth is a measure of how many days an individual felt they were in poor physical health in the past 30 days before being surveyed. An individual who had one day with poor physical health in the 30 days before the survey is 6% more likely to have heart disease. This means that individuals with a BMI of 35 (which is considered obese) are considered 30% more likely to have heart disease than someone with a BMI of 25.
+
+The logistic regression models predicts that elderly people or someone who has had a stroke are the most likely to have heart disease. Smoking, having poor physical health and being over-weight are some of the other key factors that lead to heart disease in US adults according to this model. This model also predicts that males are also more likely than females to have heart disease.
+
+------------------------------------------------------------------------
+
+I also used decision trees in my analysis of this dataset.
+
+```{r echo = TRUE}
+tree.heart <- tree(HeartDisease ~ . - BMI + Smoking + AlcoholDrinking + Stroke + PhysicalHealth + MentalHealth + Sex + AgeCategory + SleepTime , data = heartdata)
+
+{plot(tree.heart)
+text(tree.heart, pretty = 0)}
+```
+
+I used a classification tree, as I want to find out what variables will classify an individual as having Heart Disease or not. This decision tree's predicts that someone who is aged over 50 years old is predicted to have heart disease. It also predicts that someone aged under 50 years old is predicted not to have heart disease, unless they have had some physical illness for more than 7 days in the last 30 days when surveyed.
+
+This means that the decision tree model predicts that people over age 50 are most likely to be at risk of heart disease and people under the age of 50 are not deemed likely to be at risk of heart disease unless they have physical health problems.
+
+This method oversimplifies predictions compared to logistic regression does but it does give a better visualisation of the predictions it makes. While logistic regression provides more insight into each parameters contribution to the likelihood of an individual getting heart disease, the decision tree model very effectively narrows down the list of parameters to a few that are deemed most important to predicting the outcome and puts it in a visual format which is easy to interpret.
+
+## Exploratory analysis
+
+```{r include=FALSE}
+# Write code for exploratory analysis here
+
+#import data
+heartdata <- read_csv("HeartDiseaseData.csv")
+
+skimr::skim(heartdata)
+
+heartdata %>% 
+  head(n = 5)
+
+names(heartdata)
+dim(heartdata)
+
+#coding categorical data
+heartdata$HeartDisease <- factor(heartdata$HeartDisease) 
+heartdata$Sex <- factor(heartdata$Sex)
+heartdata$Smoking <- factor(heartdata$Smoking)
+heartdata$AlcoholDrinking <- factor(heartdata$AlcoholDrinking)
+heartdata$Stroke <- factor(heartdata$Stroke)
+heartdata$AgeCategory <- factor(heartdata$AgeCategory)
+
+summary(heartdata)
+
+tail(heartdata)
+
+any(is.na(heartdata)) #check for missing data - No NA vals present
+
+ggpairs(heartdata[1:6])
+pairs(heartdata[1:6])
+
+dim(heartdata)
+
+
+
+```
+
+```{r include=FALSE}
+df <- as_tibble(heartdata)
+df
+
+#standardising the data
+df.std <- lapply(heartdata, function(x) if(is.numeric(x)){
+                     scale(x, center=TRUE, scale=TRUE)
+                      } else x)
+
+
+#otherway to standardise the dataset
+
+df.std <-df %>% dplyr::mutate_if(is.numeric, scale)
+
+
+df.std_1 <- df.std %>% as.data.frame()
+
+df.std.tbl <- as_tibble(df.std)
+df.std.tbl
+```
+
+```{r include=FALSE}
+#note distribution of people with and without heart disease in the data:
+
+cs <- colSums(heartdata == "Yes") #3917 Yes
+cs[cs > 0]
+
+
+cs <- colSums(heartdata == "No") #1503 No
+cs[cs > 0]
+
+tot = 3917+1503 
+pc_h_disease = 3917/tot #percent of sample with heart disease
+
+pc_h_disease #72.27% of sample have heart disease
+
+#ideally would have a 50:50 split of those with and without heart disease, we have about 7/10 of people in the sample who have heart disease. 
+```
+
+```{r include=FALSE}
+#check split for gender
+Females <- heartdata[heartdata$Sex=="Female", , drop = FALSE]
+cs <- colSums(Females == "Yes") #1639 Yes
+cs[cs > 0]
+cs <- colSums(Females == "No") #798 No
+cs[cs > 0]
+
+Males <- heartdata[heartdata$Sex=="Male", , drop = FALSE]
+cs <- colSums(Males == "Yes") #2278 Yes
+cs[cs > 0]
+cs <- colSums(Males == "No") #705 No
+cs[cs > 0]
+
+#A larger proportion of males have heart disease than the proportion of females that have heart disease
+
+dim(Males) #2983 rows
+dim(Females) #2437 rows
+
+#almost 50-50 split on number of males and females surveyed which is good
+
+```
+
+```{r include=FALSE}
+
+agg_tbl1 <- heartdata %>% group_by(AgeCategory) %>% 
+  summarise(Male = sum(Sex == 'Male'),
+            Female = sum(Sex == 'Female'),
+            total = sum((HeartDisease == 'Yes') | (HeartDisease == 'No')),
+            .groups = 'drop')
+agg_tbl1
+
+# Convert tibble to df
+df2 <- agg_tbl1 %>% as.data.frame()
+df2
+
+#sample is slightly male dominated for most groups above age 55 but it is mostly balanced between sexes and is not a cause for concern
+
+
+
+###########
+
+agg_tbl2 <- heartdata %>% group_by(AgeCategory) %>% 
+  summarise(have_disease = sum(HeartDisease == 'Yes'),
+            total = sum((HeartDisease == 'Yes') | (HeartDisease == 'No')),
+            .groups = 'drop')
+agg_tbl2
+
+# Convert tibble to df
+df3 <- agg_tbl2 %>% as.data.frame()
+df3
+
+#number of people with heart disease increases with age in those in the sample
+```
+
+From exploratory analysis of this dataset, it appeared that older generations are more at risk of heart disease. Exploratory analysis showed that 72.27% of the sample had heart disease, which is a large proportion of the dataset. This is deemed not to be a major issue in this analysis due to a sufficiently large dataset of 5420 individuals and due to the classification nature of the problem – trying to identify which individuals are at risk of heart disease. 
+
+## Formal analysis
+
+
+```{r include=FALSE}
+#logistic regression (all variables)
+reg <- glm(HeartDisease ~ BMI + Smoking + AlcoholDrinking + Stroke + PhysicalHealth + MentalHealth + Sex + AgeCategory + SleepTime, data = heartdata, family = binomial) #logistic  regression with all variables included
+
+round(exp(reg$coefficients),2) 
+#Older people are much more likely to have heart diseases than younger people
+#risk of having heart disease increases as age increases 
+
+coefs <- round(exp(reg$coefficients),2)
+coefs
+
+CI <- round(exp(confint(reg)),2)
+
+CI_list <- cbind(coefs, CI)
+CI_list
+
+
+#remove age variable to try and find other underlying causes
+
+#regression model 'reg2' with AgeCategory variable removed
+reg2 <- glm(HeartDisease ~ BMI + Smoking + AlcoholDrinking + Stroke + PhysicalHealth + MentalHealth + Sex + SleepTime, data = heartdata, family = binomial)
+
+summary(reg2)
+#smoking, physical health and previous stroke have the greatest significance (smallest p value)
+
+coefs <- round(exp(reg2$coefficients),2)
+coefs
+
+CI <- round(exp(confint(reg2)),2)
+
+CI_list <- cbind(coefs, CI)
+CI_list
+#Previous Stroke, Smoking, Physical Health and BMI look like most significant predictors
+
+#note: Previous Stroke is likely to be a symptom rather than a cause, Age while definitely a cause - cannot be prevented - we are interested in behaviours/causes that can be changed, so we can run the regression model again without Age and Stroke and see what variables are of interest
+
+reg3 <- glm(HeartDisease ~ BMI + Smoking + AlcoholDrinking + PhysicalHealth + MentalHealth + Sex + SleepTime, data = heartdata, family = binomial)
+
+summary(reg3)
+
+coefs <- round(exp(reg3$coefficients),2)
+coefs
+
+CI <- round(exp(confint(reg3)),2)
+
+CI_list <- cbind(coefs, CI)
+CI_list
+
+
+#Smoking has highest OR value of 1.98 here (from potential causes) so this appears to be the main cause of heart disease here
+
+#Physical Health and Obesity are also large contributers to adults' cardiac health with Adults' who experienced days with poor physical health in the last 30 days prior to answering this questionaire, are 6% times more likely to be diagnosed with a cardiac disease than someone who has not experienced any days with poor physical health in the last 30 days when surveyed. Obesity is also a contributer with BMI being used as a Metric for measuring obesity, found that an increase in BMI by 1 made someone 3% more likely to have heart disease.
+
+
+
+
+#Males are more likely to have heart disease than females
+#further investigation needed to determine whether males are more likely to get heart disease because of biological/anatomical reasons or because of different behaviours or situations that may cause men's cardiac health to be worse than women's cardiac health
+
+```
+
+```{r include=FALSE}
+#tree-based methods
+
+#look at tree based methods here 
+
+#create classification tree was we are interested in classifying people as having heart disease or not based on a number of predictor variables
+tree.heart <- tree(HeartDisease ~ . - BMI + Smoking + AlcoholDrinking + Stroke + PhysicalHealth + MentalHealth + Sex + AgeCategory + SleepTime , data = heartdata)
+
+{plot(tree.heart)
+text(tree.heart, pretty = 0)}
+
+#insights:
+#for people under age 50 the main predictor of having/getting heart disease is People who have had more than 7.5 days in the last month where they had bad physical health
+
+#The main predictor is people aged over 50 are deemed at much more risk of getting heart disease than those aged under 50.
+
+#of those aged over 50 the most likely to encounter cardiac diseases are those who had strokes in the past. Those aged over 50 who have had a stroke in the past are the most likely to be diagnosed with a heart disease.
+
+
+#############
+#main insight:
+#people over 50 should be concerned about heart disease and people who are under 50 who have had many days with physical difficulties in the last 30 days prior to being surveyed are likely to have or be at risk of getting cardiac disease.
+
+
+#prune tree:
+
+{cv.heart <- cv.tree(tree.heart , FUN = prune.misclass)
+names(cv.heart)}
+
+plot(cv.heart)
+
+
+par(mfrow = c(1, 2))
+plot(cv.heart$size , cv.heart$dev, type = "b") # optimum k=3
+plot(cv.heart$k, cv.heart$dev, type = "b")
+
+
+
+prune.heart <- prune.misclass(tree.heart , k=3) #pruned, k =3
+{plot (prune.heart)
+text (prune.heart , pretty = 0)}
+
+```
+
+```{r, include = FALSE}
+#tree with age removed
+tree.heart2 <- tree(HeartDisease ~ BMI + Smoking + AlcoholDrinking + Stroke + PhysicalHealth + MentalHealth + Sex + SleepTime , data = heartdata)
+
+{plot(tree.heart2)
+text(tree.heart2, pretty = 0)}
+
+```
+
+From my analysis I conclude that the people who are identified as most at risk of heart disease are individuals who have had a stroke in the past or individuals who are aged over 50. Age and Stroke are deemed the most significant variables in the logistic regression analysis along with sex, smoking, BMI and physical illlness.
+
+The decision tree identified age, stroke and physical health as the main predictors for having heart disease.
+
+Smoking, having poor physical health (or physical illness) and being over-weight are identified as key factors that cause heart disease in American Adults. Variables associated with these factors have the high odds-ratios from the logistic regression analysis and are deemed very significant.
+
+## Conclusions
+
+From my analysis I conclude that the people who are identified as most at risk of heart disease are individuals who have had a stroke in the past or individuals who are aged over 50. Smoking, having poor physical health/illness and being over-weight are key factors that cause heart disease in American Adults.
+
+Males are about 50% more likely than females to be diagnosed with heart disease. Smokers are almost twice as likely to get heart disease than members of the population who do not smoke.
+
+People who have suffered a stroke are more than 5 times more likely to have heart disease than someone who has not had a stroke.
+
+## Question (b) - Non-technical report
+
+Using Statistical techniques of Logistic Regression and Decision trees, I found that the people most at risk of heart disease are those who have previously suffered a stroke and those who are aged over 50.
+
+The key factors I identified as causes of heart disease from my analysis are smoking, having physical illness/poor physical health and being over-weight are key factors that cause heart disease in adults.
+
+Males are about 50% more likely than females to be diagnosed with heart disease – although further analysis may be needed to determine if this discrepancy is due to anatomical factors or due to factors related to habits that men tend to adopt more than women do. Smokers are almost twice as likely to get heart disease than members of the population who do not smoke.
+
+People who have suffered a stroke are more than 5 times more likely to have heart disease than someone who has not had a stroke.
+
+Further analysis may be done to determine the reason behind the difference in likelihood of males and females developing heart disease.
