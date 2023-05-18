@@ -1,0 +1,31 @@
+DELIMITER //
+CREATE OR REPLACE PROCEDURE AddTrack(IN A VARCHAR(255),IN S VARCHAR(255))
+MODIFIES SQL DATA
+BEGIN
+    
+
+DECLARE TN int;
+
+IF (SELECT MAX(track_no) FROM song_album WHERE album_id = A) <> NULL THEN
+		SET TN = (SELECT MAX(track_no)
+          	FROM song_album
+          	WHERE album_id = A);
+
+ElSE SET TN = 0;
+
+END IF;
+
+
+    IF (A IN (SELECT album_id 
+              FROM albums))
+              AND
+    	(S IN (SELECT song_id
+               FROM songs)) THEN
+                     
+                     INSERT INTO song_album
+                     VALUES(S,A,TN + 1);
+                     
+                     
+                     END IF;
+                     END;
+                     //

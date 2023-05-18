@@ -1,0 +1,82 @@
+Create view Exceptions(artist_name, album_name). 
+(A, B) is a data row in this view if and only if artist A contributes to at least one song on album B 
+(according to table song_artist) but artist A is not listed as one of the artists on album B in table album_artist. 
+There should be no duplicate data rows in the view
+1. ==some assumption: that artist is on 0 album in the album_artist table ====
+create view Exceptions AS
+Select a.artist_name,al.album_name
+from artists a
+inner join song_artist s_a
+on a.artist_id=s_a.artist_id
+
+join song_album s_al
+on s_a.song_id=s_al.song_id
+
+join albums al
+on s_al.album_id=al.album_id
+
+where a.artist_id not in 
+(select artist_id from album_artist);
+
+==============================================================
+correct
+create or replace view Exceptions AS
+Select a.artist_name,al.album_name
+from artists a
+inner join song_artist s_a
+on a.artist_id=s_a.artist_id
+
+join song_album s_al
+on s_a.song_id=s_al.song_id
+
+join albums al
+on s_al.album_id=al.album_id
+
+join album_artist a_a
+on al.album_id=a_a.album_id
+
+where a.artist_id !=a_a.artist_id
+2.
+select distinct(a.album_name), GROUP_CONCAT(DISTINCT ar.artist_name SEPARATOR ", ") AS "list_of_artist",a.date_of_release, 
+ (select sum(song_length)) as total_length
+from albums a
+
+left join song_album s_a
+on a.album_id=s_a.album_id
+
+
+inner join (select distinct song_id,artist_id from song_artist) s_ar
+on s_a.song_id = s_ar.song_id
+
+inner join songs so
+on  s_ar.song_id=so.song_id
+
+left join artists ar
+on s_ar.artist_id=ar.artist_id
+group by a.album_id
+=================================================================
+3.
+Write trigger CheckReleaseDate that does the following. Assume a new row (S, A, TN) is inserted into 
+table song_album with song_id S, album_id A and track_no TN. Check if the release date of song S is 
+later than the release date of album A. If this is the case, then change the release date of song S 
+in table songs to be the same as the release date of album A.
+=================================================================
+DELIMITER //
+CREATE OR REPLACE TRIGGER CheckReleasedate
+AFTER insert on song_album
+FOR EACH ROW BEGIN
+if (select date_of_release from songs s 
+where NEW.song_id=s.song_id)
+> 
+(select date_of_release from albums a
+where NEW.album_id=a.album_id) then 
+update songs s_d
+set s_d.date_of_release=(select date_of_release from albums a
+where NEW.album_id=a.album_id)
+where s_d.song_id=NEW.song_id;
+
+END IF;
+END; //
+
+
+
