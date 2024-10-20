@@ -1,1 +1,1 @@
-Projects I worked on in by Theoretical Physics BSc. and my MSc. in Data Science.
+Projects I worked on in during my Theoretical Physics BSc. and my MSc. in Data Science.
